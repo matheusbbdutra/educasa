@@ -50,14 +50,37 @@ help: ## Mostra comandos disponíveis
 link-env: ## Cria links simbólicos dos arquivos .env
 	@echo "🔗 Criando links simbólicos dos arquivos .env..."
 	@if [ ! -f .env ]; then \
-		echo "❌ Erro: .env não encontrado na raiz do projeto"; \
-		exit 1; \
+		echo "⚠️  .env não encontrado na raiz do projeto"; \
+		echo "💡 Criando .env a partir de .env.example..."; \
+		cp .env.example .env; \
+		echo "⚠️  Por favor, edite o arquivo .env com suas configurações"; \
 	fi
-	@ln -sf ../.env web-app/.env 2>/dev/null || true
-	@ln -sf ../.env microservice-go/.env 2>/dev/null || true
-	@echo "✅ Links criados:"
-	@echo "   web-app/.env → ../.env"
-	@echo "   microservice-go/.env → ../.env"
+	@if [ -f web-app/.env ]; then \
+		if [ -L web-app/.env ]; then \
+			echo "✅ web-app/.env já é um link simbólico"; \
+		else \
+			echo "⚠️  web-app/.env existe mas não é um link simbólico. Fazendo backup..."; \
+			mv web-app/.env web-app/.env.backup; \
+			ln -sf ../.env web-app/.env; \
+			echo "✅ web-app/.env → ../.env (backup salvo em web-app/.env.backup)"; \
+		fi \
+	else \
+		ln -sf ../.env web-app/.env; \
+		echo "✅ web-app/.env → ../.env"; \
+	fi
+	@if [ -f microservice-go/.env ]; then \
+		if [ -L microservice-go/.env ]; then \
+			echo "✅ microservice-go/.env já é um link simbólico"; \
+		else \
+			echo "⚠️  microservice-go/.env existe mas não é um link simbólico. Fazendo backup..."; \
+			mv microservice-go/.env microservice-go/.env.backup; \
+			ln -sf ../.env microservice-go/.env; \
+			echo "✅ microservice-go/.env → ../.env (backup salvo em microservice-go/.env.backup)"; \
+		fi \
+	else \
+		ln -sf ../.env microservice-go/.env; \
+		echo "✅ microservice-go/.env → ../.env"; \
+	fi
 
 setup: ## Configuração inicial do projeto
 	@echo "🔧 Configurando ambiente..."

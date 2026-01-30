@@ -68,11 +68,18 @@ export default defineEventHandler(async (event: H3Event) => {
       byTurma.get(turmaName)!.push(student)
     }
 
-    const adminEmail = process.env.EXPORT_TO_EMAIL
+    // 7. Determinar email de destino
+    // Tentar buscar do banco primeiro, fallback para variável de ambiente
+    const emailSetting = await prisma.systemSetting.findUnique({
+      where: { key: 'admin_notification_email' }
+    })
+
+    const adminEmail = emailSetting?.value || process.env.EXPORT_TO_EMAIL
+
     if (!adminEmail) {
       throw createError({
         statusCode: 500,
-        statusMessage: 'Email administrativo não configurado'
+        statusMessage: 'Email administrativo não configurado (Verifique Configurações > Geral)'
       })
     }
 

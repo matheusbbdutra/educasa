@@ -163,6 +163,41 @@
           </div>
         </div>
       </div>
+
+      <!-- Configurações de Notificação -->
+      <div class="bg-white rounded-lg shadow-md p-6 mt-6">
+        <h2 class="text-xl font-semibold text-gray-800 mb-4 flex items-center">
+          <Icon name="heroicons:envelope" class="w-6 h-6 mr-2 text-indigo-600" />
+          Notificações e Relatórios
+        </h2>
+
+        <form @submit.prevent="handleEmailSettingsSubmit" class="space-y-4">
+          <div>
+            <label class="text-sm font-medium text-gray-700">Email para Recebimento de Relatórios</label>
+            <input
+              v-model="emailSettingsForm.admin_notification_email"
+              type="email"
+              class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md"
+              required
+              placeholder="ex: admin@escola.com.br"
+            />
+            <p class="text-xs text-gray-500 mt-1">Este email receberá as exportações de dados e relatórios mensais.</p>
+          </div>
+
+          <p v-if="emailSettingsError" class="text-sm text-red-500">{{ emailSettingsError }}</p>
+          <p v-if="emailSettingsSuccess" class="text-sm text-green-600">{{ emailSettingsSuccess }}</p>
+
+          <div class="flex justify-end">
+            <button
+              type="submit"
+              :disabled="emailSettingsSubmitting"
+              class="py-2 px-4 border border-transparent rounded-md text-white bg-indigo-600 hover:bg-indigo-700 disabled:opacity-50"
+            >
+              {{ emailSettingsSubmitting ? 'Salvando...' : 'Salvar Configurações' }}
+            </button>
+          </div>
+        </form>
+      </div>
     </div>
   </div>
 </template>
@@ -181,6 +216,15 @@ const profileError = ref('')
 const profileSuccess = ref('')
 const passwordError = ref('')
 const passwordSuccess = ref('')
+const emailSettingsSubmitting = ref(false)
+const emailSettingsError = ref('')
+const emailSettingsSuccess = ref('')
+
+const emailSettingsForm = ref({
+  admin_notification_email: ''
+})
+
+
 
 const profileForm = ref({
   name: '',
@@ -239,6 +283,46 @@ const loadStats = async () => {
     console.error('Erro ao carregar estatísticas:', err)
   } finally {
     statsLoading.value = false
+  }
+}
+
+
+
+const loadEmailSettings = async () => {
+  try {
+    const data: any = await $fetch('/api/admin/settings', {
+      headers: { Authorization: `Bearer ${token.value}` }
+    })
+    console.log('Settings carregados:', data)
+    if (data && data.admin_notification_email) {
+      emailSettingsForm.value.admin_notification_email = data.admin_notification_email
+    }
+  } catch (err) {
+    console.error('Erro ao carregar configurações de email:', err)
+  }
+}
+
+const handleEmailSettingsSubmit = async () => {
+  emailSettingsError.value = ''
+  emailSettingsSuccess.value = ''
+  emailSettingsSubmitting.value = true
+
+  try {
+    await $fetch('/api/admin/settings', {
+      method: 'POST',
+      headers: { Authorization: `Bearer ${token.value}` },
+      body: emailSettingsForm.value
+    })
+
+    emailSettingsSuccess.value = 'Configurações de email atualizadas com sucesso!'
+    
+    setTimeout(() => {
+      emailSettingsSuccess.value = ''
+    }, 3000)
+  } catch (err: any) {
+    emailSettingsError.value = err.data?.message || 'Erro ao salvar configurações'
+  } finally {
+    emailSettingsSubmitting.value = false
   }
 }
 
@@ -314,5 +398,6 @@ const handlePasswordSubmit = async () => {
 onMounted(() => {
   loadUserData()
   loadStats()
+  loadEmailSettings()
 })
 </script>
