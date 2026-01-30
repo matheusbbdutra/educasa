@@ -3,9 +3,10 @@
     <!-- Mobile Top Bar -->
     <div class="bg-gray-900 text-gray-100 flex justify-between md:hidden fixed top-0 left-0 right-0 z-40 safe-top">
       <div class="p-4 pt-6">
-        <h2 class="text-xl font-bold">
-          💰 Educa.SA
-        </h2>
+        <div class="flex items-center gap-2">
+          <img src="/logosa.png" alt="Educa.SA" class="h-8 w-auto" />
+          <h2 class="text-xl font-bold">Educa.SA</h2>
+        </div>
         <p class="text-xs text-gray-400">Painel Administrativo</p>
       </div>
       <button @click="sidebarOpen = !sidebarOpen" class="p-4 pt-6 focus:outline-none focus:bg-gray-800">
@@ -36,9 +37,9 @@
       </button>
 
       <div class="px-4 py-7 pt-20 md:pt-7">
-        <h2 class="text-2xl font-bold bg-gradient-to-r from-blue-400 to-indigo-400 bg-clip-text text-transparent hidden md:block">
-          💰 Educa.SA
-        </h2>
+        <div class="hidden md:block">
+          <img src="/logosa.png" alt="Educa.SA Logo" class="h-16 w-auto object-contain" />
+        </div>
         <p class="text-xs text-gray-400 mt-1 hidden md:block">Painel Administrativo</p>
       </div>
 
