@@ -1,0 +1,144 @@
+version: '3.8'
+
+services:
+  traefik:
+    image: traefik:v2.10
+    container_name: traefik
+    restart: unless-stopped
+    security_opt:
+      - no-new-privileges:true
+    ports:
+      - "80:80"
+      - "443:443"
+    environment:
+      - CF_API_EMAIL=${CF_API_EMAIL}
+      - CF_DNS_API_TOKEN=${CF_DNS_API_TOKEN}
+      - TRAEFIK_CERTIFICATESRESOLVERS_CLOUDFLARE_ACME_EMAIL=${ACME_EMAIL}
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+      - ./traefik/traefik.yml:/etc/traefik/traefik.yml:ro
+      - ./traefik/dynamic.yml:/etc/traefik/dynamic.yml:ro
+      - ./traefik/acme.json:/letsencrypt/acme.json
+    networks:
+      - traefik-public
+    labels:
+      - "traefik.enable=true"
+
+  # Nuxt Web App com Embedded Replica
+  web-app:
+    build:
+      context: ./web-app
+      dockerfile: Dockerfile
+    container_name: educasa-web-app
+    restart: unless-stopped
+    environment:
+      - NODE_ENV=production
+      # Embedded Replica
+      - USE_EMBEDDED_REPLICA=${USE_EMBEDDED_REPLICA:-true}
+      - EMBEDDED_DB_PATH=file:./database/webapp.db
+      - SYNC_INTERVAL=${SYNC_INTERVAL:-60}
+      # Turso Cloud
+      - TURSO_DATABASE_URL=${TURSO_DATABASE_URL}
+      - TURSO_AUTH_TOKEN=${TURSO_AUTH_TOKEN}
+      # JWT
+      - NUXT_JWT_SECRET=${JWT_SECRET}
+      # Zeptomail
+      - ZEPTOMAIL_API_KEY=${ZEPTOMAIL_API_KEY}
+      - ZEPTOMAIL_FROM_EMAIL=${ZEPTOMAIL_FROM_EMAIL}
+      - ZEPTOMAIL_FROM_NAME=${ZEPTOMAIL_FROM_NAME}
+      # Go Worker API
+      - GO_WORKER_API_URL=http://go-worker:8080
+      - GO_WORKER_API_KEY=${GO_WORKER_API_KEY}
+      # Sentry
+      - SENTRY_DSN=${SENTRY_DSN}
+      - SENTRY_DEBUG=${SENTRY_DEBUG:-false}
+      - SENTRY_LOG_LEVEL=${SENTRY_LOG_LEVEL:-error}
+    volumes:
+      - webapp-db:/app/database
+      - ./uploads:/app/uploads
+    networks:
+      - traefik-public
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.educasa.rule=Host(`educasa.app.br`)"
+      - "traefik.http.routers.educasa.entrypoints=websecure"
+      - "traefik.http.routers.educasa.tls=true"
+      - "traefik.http.routers.educasa.tls.certresolver=cloudflare"
+      - "traefik.http.routers.educasa.service=educasa-service"
+      - "traefik.http.routers.educasa.middlewares=security-headers@file,compress@file"
+      - "traefik.http.services.educasa-service.loadbalancer.server.port=3000"
+      # Router www (redirecionamento)
+      - "traefik.http.routers.educasa-www.rule=Host(`www.educasa.app.br`)"
+      - "traefik.http.routers.educasa-www.entrypoints=websecure"
+      - "traefik.http.routers.educasa-www.tls=true"
+      - "traefik.http.routers.educasa-www.tls.certresolver=cloudflare"
+      - "traefik.http.routers.educasa-www.middlewares=redirect-www-to-non-www"
+      # Middleware de redirecionamento www → non-www
+      - "traefik.http.middlewares.redirect-www-to-non-www.redirectregex.regex=^https://www\\.(.+)"
+      - "traefik.http.middlewares.redirect-www-to-non-www.redirectregex.replacement=https://$${1}"
+      - "traefik.http.middlewares.redirect-www-to-non-www.redirectregex.permanent=true"
+    depends_on:
+      - go-worker
+
+  # Go Worker com Embedded Replica
+  go-worker:
+    build:
+      context: ./microservice-go
+      dockerfile: Dockerfile
+    container_name: educasa-go-worker
+    restart: unless-stopped
+    environment:
+      # Embedded Replica
+      - GO_DB_MODE=${GO_DB_MODE:-embedded}
+      - GO_DB_PATH=/data/worker.db
+      - GO_SYNC_INTERVAL=${GO_SYNC_INTERVAL:-24h}
+      - GO_DB_ENCRYPTION_KEY=${GO_DB_ENCRYPTION_KEY:-}
+      # Turso Cloud
+      - TURSO_DATABASE_URL=${TURSO_DATABASE_URL}
+      - TURSO_AUTH_TOKEN=${TURSO_AUTH_TOKEN}
+      # Zeptomail
+      - ZEPTOMAIL_API_KEY=${ZEPTOMAIL_API_KEY}
+      - ZEPTOMAIL_FROM_EMAIL=${ZEPTOMAIL_FROM_EMAIL}
+      - ZEPTOMAIL_FROM_NAME=${ZEPTOMAIL_FROM_NAME}
+      # API Security
+      - GO_WORKER_API_KEY=${GO_WORKER_API_KEY}
+      # Worker Config
+      - BATCH_SIZE=${BATCH_SIZE:-20}
+      - MAX_CONCURRENT_JOBS=${MAX_CONCURRENT_JOBS:-3}
+      - WORKER_POLL_INTERVAL=${WORKER_POLL_INTERVAL:-5s}
+      - JOB_TIMEOUT_MINUTES=${JOB_TIMEOUT_MINUTES:-30}
+      # Scheduler
+      - ENABLE_SCHEDULER=${ENABLE_SCHEDULER:-true}
+      - MONTHLY_CRON=${MONTHLY_CRON:-0 0 1 * *}
+      # Server
+      - SERVER_PORT=${SERVER_PORT:-8080}
+      - SERVER_HOST=${SERVER_HOST:-0.0.0.0}
+      - GO_LOG_LEVEL=${GO_LOG_LEVEL:-info}
+      - GO_LOG_FORMAT=${GO_LOG_FORMAT:-json}
+      # Sentry
+      - SENTRY_DSN=${SENTRY_DSN}
+    volumes:
+      - worker-db:/data
+      - worker-exports:/tmp/exports
+    networks:
+      - traefik-public
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.go-worker.rule=Host(`worker.educasa.app.br`)"
+      - "traefik.http.routers.go-worker.entrypoints=websecure"
+      - "traefik.http.routers.go-worker.tls=true"
+      - "traefik.http.routers.go-worker.tls.certresolver=cloudflare"
+      - "traefik.http.routers.go-worker.service=go-worker-service"
+      - "traefik.http.services.go-worker-service.loadbalancer.server.port=8080"
+
+networks:
+  traefik-public:
+    external: true
+
+volumes:
+  webapp-db:
+    driver: local
+  worker-db:
+    driver: local
+  worker-exports:
+    driver: local

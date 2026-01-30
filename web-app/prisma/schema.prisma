@@ -1,0 +1,154 @@
+generator client {
+  provider        = "prisma-client-js"
+  previewFeatures = ["driverAdapters"]
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+enum UserRole {
+  ADMIN
+  STUDENT
+  EXTERNAL
+}
+
+enum TransactionType {
+  INCOME
+  EXPENSE
+}
+
+model User {
+  id        String   @id @default(cuid())
+  email     String   @unique
+  password  String
+  name      String
+  role      UserRole @default(STUDENT)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Consentimento para exportação automática
+  autoExportConsent Boolean @default(false)
+
+  // Relacionamentos
+  turmaId       String?
+  turma         Turma?        @relation(fields: [turmaId], references: [id], onDelete: SetNull)
+  transactions  Transaction[]
+  subcategories Subcategory[]
+  emailExports  EmailExport[]
+
+  @@map("users")
+}
+
+model Turma {
+  id          String   @id @default(cuid())
+  name        String
+  description String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  // Relacionamentos
+  students User[]
+
+  @@map("turmas")
+}
+
+model Category {
+  id        String          @id @default(cuid())
+  name      String
+  type      TransactionType @default(EXPENSE)
+  isSystem  Boolean         @default(false)
+  createdAt DateTime        @default(now())
+  updatedAt DateTime        @updatedAt
+
+  // Relacionamentos
+  subcategories Subcategory[]
+  transactions  Transaction[]
+
+  @@unique([name, type])
+  @@map("categories")
+}
+
+model Subcategory {
+  id        String   @id @default(cuid())
+  name      String
+  isSystem  Boolean  @default(false)
+  userId    String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Relacionamentos
+  categoryId   String
+  category     Category      @relation(fields: [categoryId], references: [id], onDelete: Cascade)
+  user         User?         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  transactions Transaction[]
+
+  @@unique([categoryId, name])
+  @@map("subcategories")
+}
+
+model Transaction {
+  id          String          @id @default(cuid())
+  description String
+  amount      Float
+  type        TransactionType
+  date        DateTime
+  createdAt   DateTime        @default(now())
+  updatedAt   DateTime        @updatedAt
+
+  // Relacionamentos
+  userId        String
+  user          User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  categoryId    String?
+  category      Category?    @relation(fields: [categoryId], references: [id], onDelete: SetNull)
+  subcategoryId String?
+  subcategory   Subcategory? @relation(fields: [subcategoryId], references: [id], onDelete: SetNull)
+
+  @@index([userId, date])
+  @@map("transactions")
+}
+
+enum ExportType {
+  MANUAL
+  MONTHLY_AUTO
+}
+
+enum ExportStatus {
+  PENDING
+  PROCESSING
+  SENT
+  FAILED
+  RETRYING
+}
+
+model EmailExport {
+  id              String       @id @default(cuid())
+  userId          String
+  user            User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userEmail       String
+  userName        String
+  type            ExportType   @default(MANUAL)
+  status          ExportStatus @default(PENDING)
+  startDate       DateTime
+  endDate         DateTime
+  batchId         String?
+  batchNumber     Int?
+  totalBatches    Int?
+  recipientsCount Int
+  toEmail         String
+  subject         String
+  attachmentPath  String?
+  createdAt       DateTime     @default(now())
+  sentAt          DateTime?
+  failedAt        DateTime?
+  errorMessage    String?
+  retryCount      Int          @default(0)
+  lastRetryAt     DateTime?
+
+  @@index([userId])
+  @@index([status])
+  @@index([type])
+  @@index([batchId])
+  @@map("email_exports")
+}

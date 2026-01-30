@@ -1,0 +1,42 @@
+# Nuxt dev/build outputs
+.output
+.data
+.nuxt
+.nitro
+.cache
+dist
+
+# Node dependencies
+node_modules
+
+# Logs
+logs
+*.log
+
+# Misc
+.DS_Store
+.fleet
+.idea
+
+# Local env files
+.env
+.env.*
+!.env.example
+!.env.production.example
+
+# Prisma
+prisma/*.db
+prisma/*.db-journal
+
+# Docker
+docker-compose.override.yml
+
+# Protótipo HTML (não usado)
+model.html
+./gemini_security
+./claude
+
+# Traefik
+traefik/acme.json
+DEPLOY.md
+prisma/database/educasa_prod.db

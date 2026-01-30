@@ -1,0 +1,27 @@
+# Binários
+worker
+*.exe
+*.dll
+*.so
+*.dylib
+*.test
+*.out
+
+# Banco de dados local
+*.db
+*.db-shm
+*.db-wal
+*.db-info
+database/
+
+# Ambiente
+.env
+.env.local
+.env.*.local
+
+# Logs
+*.log
+
+# Temporários
+tmp/
+*.tmp

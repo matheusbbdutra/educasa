@@ -1,0 +1,11 @@
+node_modules
+.nuxt
+.output
+# .env  # Temporariamente habilitado para build com Sentry/Turso
+.env.*
+!.env.example
+*.log
+.git
+.gitignore
+README.md
+model.html
