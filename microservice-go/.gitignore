@@ -1,5 +1,4 @@
 # Binários
-worker
 *.exe
 *.dll
 *.so
