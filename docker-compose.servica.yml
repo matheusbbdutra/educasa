@@ -44,14 +44,14 @@ services:
       - "traefik.http.routers.educasa.rule=Host(`educasa.app.br`)"
       - "traefik.http.routers.educasa.entrypoints=websecure"
       - "traefik.http.routers.educasa.tls=true"
-      - "traefik.http.routers.educasa.tls.certresolver=letsencrypt"
+      - "traefik.http.routers.educasa.tls.certresolver=cloudflare"
       - "traefik.http.services.educasa.loadbalancer.server.port=3000"
 
       # Router www (redirecionamento)
       - "traefik.http.routers.educasa-www.rule=Host(`educasa.mdutra.dev`)"
       - "traefik.http.routers.educasa-www.entrypoints=websecure"
       - "traefik.http.routers.educasa-www.tls=true"
-      - "traefik.http.routers.educasa-www.tls.certresolver=letsencrypt"
+      - "traefik.http.routers.educasa-www.tls.certresolver=cloudflare"
       - "traefik.http.routers.educasa-www.middlewares=redirect-www"
 
       # Middleware de redirecionamento www → non-www
@@ -121,7 +121,7 @@ services:
       - "traefik.http.routers.go-worker.rule=Host(`worker.mdutra.dev`)"
       - "traefik.http.routers.go-worker.entrypoints=websecure"
       - "traefik.http.routers.go-worker.tls=true"
-      - "traefik.http.routers.go-worker.tls.certresolver=letsencrypt"
+      - "traefik.http.routers.go-worker.tls.certresolver=cloudflare"
       - "traefik.http.services.go-worker.loadbalancer.server.port=8080"
 
 networks:
