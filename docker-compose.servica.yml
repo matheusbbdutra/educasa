@@ -48,7 +48,7 @@ services:
       - "traefik.http.services.educasa.loadbalancer.server.port=3000"
 
       # Router www (redirecionamento)
-      - "traefik.http.routers.educasa-www.rule=Host(`www.educasa.app.br`)"
+      - "traefik.http.routers.educasa-www.rule=Host(`educasa.mdutra.dev`)"
       - "traefik.http.routers.educasa-www.entrypoints=websecure"
       - "traefik.http.routers.educasa-www.tls=true"
       - "traefik.http.routers.educasa-www.tls.certresolver=letsencrypt"
@@ -118,7 +118,7 @@ services:
     labels:
       # Traefik labels (para Traefik externo)
       - "traefik.enable=true"
-      - "traefik.http.routers.go-worker.rule=Host(`worker.educasa.app.br`)"
+      - "traefik.http.routers.go-worker.rule=Host(`worker.mdutra.dev`)"
       - "traefik.http.routers.go-worker.entrypoints=websecure"
       - "traefik.http.routers.go-worker.tls=true"
       - "traefik.http.routers.go-worker.tls.certresolver=letsencrypt"
